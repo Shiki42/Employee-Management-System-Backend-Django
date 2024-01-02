@@ -1,9 +1,6 @@
 from django.db import models
-
+from django.contrib.auth.models import AbstractUser
 # Assuming you have a User model defined elsewhere for the creator field
-from .user_model import User
-from .document_model import Document  # Assuming a Document model is defined
-
 
 class Profile(models.Model):
     STATUS_CHOICES = [
@@ -58,3 +55,55 @@ class Profile(models.Model):
     work_auth_other = models.CharField(max_length=100, blank=True)
     driver_license = models.ForeignKey(Document, related_name='profile_driver_license', on_delete=models.CASCADE)
     profile_picture = models.ForeignKey(Document, related_name='profile_profile_picture', on_delete=models.CASCADE)
+
+class VisaStatus(models.Model):
+    DOC_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('N/A', 'N/A'),
+        ('need to upload', 'Need to Upload'),
+    ]
+
+    status = models.CharField(max_length=50, choices=DOC_STATUS_CHOICES, default='N/A')
+    doc_id = models.ForeignKey(Document, on_delete=models.SET_NULL, null=True, blank=True)
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ('employee', 'Employee'),
+        ('HR', 'HR'),
+        ('admin', 'Admin'),
+    ]
+
+    VISA_STATUS_CHOICES = [
+        ('optReceipt', 'OPT Receipt'),
+        ('optEad', 'OPT EAD'),
+        ('i983', 'I983'),
+        ('i20', 'I20'),
+        ('approved', 'Approved'),
+    ]
+
+    DOC_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('N/A', 'N/A'),
+        ('need to upload', 'Need to Upload'),
+    ]
+
+    name = models.CharField(max_length=255, unique=True)
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='employee')
+    password = models.CharField(max_length=255)  # Consider using Django's built-in password management
+    application = models.ForeignKey('Application', on_delete=models.SET_NULL, null=True, blank=True)
+    profile = models.ForeignKey('Profile', on_delete=models.SET_NULL, null=True, blank=True)
+    documents = models.ManyToManyField('Document')
+    work_auth_type = models.CharField(max_length=50, choices=User.WORK_AUTH_CHOICES, blank=True)
+    work_auth_start_date = models.DateField(null=True, blank=True)
+    work_auth_end_date = models.DateField(null=True, blank=True)
+    work_auth_other = models.CharField(max_length=100, blank=True)
+
+    opt_receipt = models.OneToOneField(VisaStatus, on_delete=models.SET_NULL, null=True, related_name='opt_receipt')
+    opt_ead = models.OneToOneField(VisaStatus, on_delete=models.SET_NULL, null=True, related_name='opt_ead')
+    i983 = models.OneToOneField(VisaStatus, on_delete=models.SET_NULL, null=True, related_name='i983')
+    i20 = models.OneToOneField(VisaStatus, on_delete=models.SET_NULL, null=True, related_name='i20')
